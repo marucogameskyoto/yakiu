@@ -374,6 +374,36 @@
       color: var(--red);
     }
 
+    .meia-alert {
+      position: absolute;
+      left: 50%;
+      top: 45%;
+      transform: translate(-50%, -50%) rotate(-5deg) scale(.78);
+      color: #e60012;
+      -webkit-text-stroke: 4px #fff;
+      text-shadow:
+        0 6px 0 #2f2a27,
+        0 12px 24px rgba(0, 0, 0, .35);
+      font-size: clamp(64px, 21vw, 112px);
+      font-weight: 950;
+      line-height: 1;
+      letter-spacing: 0;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .meia-alert.show {
+      animation: meiaAlert .9s ease forwards;
+    }
+
+    @keyframes meiaAlert {
+      0% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(.58); }
+      18% { opacity: 1; transform: translate(-50%, -50%) rotate(4deg) scale(1.1); }
+      70% { opacity: 1; transform: translate(-50%, -50%) rotate(-3deg) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -58%) rotate(3deg) scale(.92); }
+    }
+
     @keyframes pop {
       0% { opacity: 0; transform: translate(-50%, 8px) scale(.86); }
       22% { opacity: 1; transform: translate(-50%, -4px) scale(1.05); }
@@ -1011,6 +1041,7 @@
       <div id="chatterB" class="chatter chatter-b">待って、その話先に聞きたい。</div>
       <div id="chatterC" class="chatter chatter-c">飲み物もう一つ頼む？</div>
       <div id="floatScore" class="float-score">+1</div>
+      <div id="meiaAlert" class="meia-alert">は？</div>
       <div id="yakiuBubble" class="yakiu-bubble">やきう</div>
 
       <div id="meia" class="character meia" aria-label="メイア">
@@ -1190,6 +1221,7 @@
       suspicionText: document.querySelector("#suspicionText"),
       log: document.querySelector("#log"),
       floatScore: document.querySelector("#floatScore"),
+      meiaAlert: document.querySelector("#meiaAlert"),
       yakiuBubble: document.querySelector("#yakiuBubble"),
       listenerA: document.querySelector("#listenerA"),
       listenerB: document.querySelector("#listenerB"),
@@ -1354,6 +1386,13 @@
       els.yakiuBubble.classList.add("show");
     }
 
+    function showMeiaAlert() {
+      els.meiaAlert.textContent = Math.random() < 0.5 ? "は？" : "滅ぼす";
+      els.meiaAlert.classList.remove("show");
+      void els.meiaAlert.offsetWidth;
+      els.meiaAlert.classList.add("show");
+    }
+
     function insertYakiu() {
       if (!state.running || state.paused || state.time <= 0) return;
       showYakiuBubble();
@@ -1365,6 +1404,7 @@
       state.score += delta;
 
       if (caught) {
+        showMeiaAlert();
         state.caughtCount += 1;
         state.suspicion = clamp(state.suspicion + 25, 0, 100);
         state.attention = clamp(state.attention + 18, 0, 100);
