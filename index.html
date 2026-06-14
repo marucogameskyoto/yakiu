@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>やきうさしこみ</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #24211e;
+      --muted: #6c665e;
+      --paper: #fffaf0;
+      --panel: #fff3d8;
+      --line: #2f2a27;
+      --red: #d84343;
+      --green: #287c55;
+      --blue: #3f6fbc;
+      --gold: #d49a24;
+      --shadow: 0 18px 45px rgba(28, 25, 22, .18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      min-height: 100%;
+      overflow: hidden;
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.48), rgba(255,255,255,0) 24%),
+        radial-gradient(circle at 18% 14%, rgba(255, 222, 126, .35), transparent 28%),
+        linear-gradient(135deg, #f5d37a 0%, #f6a86d 35%, #82b7b0 74%, #5a87b9 100%);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .game {
+      width: min(430px, 100vw);
+      height: 100dvh;
+      min-height: 640px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      padding: 8px;
+    }
+
+    .topbar,
+    .stage {
+      border: 3px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      gap: 7px;
+      padding: 8px;
+      background: rgba(255, 250, 240, .94);
+    }
+
+    h1 {
+      margin: 0;
+      grid-column: 1 / -1;
+      font-size: 19px;
+      line-height: 1;
+      letter-spacing: 0;
+      text-align: center;
+    }
+
+    .pill {
+      min-width: 0;
+      border: 2px solid var(--line);
+      background: #fff;
+      padding: 7px 5px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .side {
+      display: none;
+    }
+
+    .portrait {
+      aspect-ratio: 1.12 / 1;
+      border: 3px solid var(--line);
+      background: #f4d88a;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .portrait svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .meters {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .meter-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .track {
+      height: 20px;
+      border: 2px solid var(--line);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      width: 0%;
+      background: var(--green);
+      transition: width .18s ease, background .18s ease;
+    }
+
+    .log {
+      min-height: 150px;
+      border: 2px solid var(--line);
+      background: #fff;
+      padding: 10px;
+      overflow: auto;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .log p {
+      margin: 0 0 8px;
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      background:
+        linear-gradient(180deg, #8fd0d2 0 42%, #f3c874 42% 100%);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 36%;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.08) 1px, transparent 1px) 0 0 / 42px 100%,
+        #d77d57;
+      border-top: 3px solid var(--line);
+    }
+
+    .poster {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 58px;
+      height: 42px;
+      border: 3px solid var(--line);
+      background: #fff6cd;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 900;
+      transform: rotate(-5deg);
+    }
+
+    .window {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 74px;
+      height: 48px;
+      border: 3px solid var(--line);
+      background: linear-gradient(135deg, #f9fbff 0 49%, #b8dbff 50%);
+    }
+
+    .character {
+      position: absolute;
+      bottom: 22px;
+      width: 36%;
+      min-width: 0;
+      transform-origin: bottom center;
+      transition: transform .18s ease;
+    }
+
+    .character img,
+    .friend-c img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      filter: drop-shadow(0 10px 10px rgba(0,0,0,.22));
+    }
+
+    .character.meia {
+      left: 2%;
+      z-index: 3;
+    }
+
+    .character.listener-a {
+      left: 32%;
+      z-index: 2;
+      width: 31%;
+    }
+
+    .character.listener-b {
+      right: 0;
+      z-index: 2;
+      width: 32%;
+    }
+
+    .character.distracted {
+      transform: rotate(7deg) translateY(4px);
+    }
+
+    .character.suspicious {
+      transform: translateY(-8px) scale(1.04);
+    }
+
+    .friend-c {
+      position: absolute;
+      left: 37%;
+      bottom: 148px;
+      width: 25%;
+      min-width: 0;
+      z-index: 1;
+      transform-origin: bottom center;
+      transition: transform .18s ease;
+    }
+
+    .friend-c.distracted {
+      transform: rotate(-7deg) translateY(4px);
+    }
+
+    .friend-c.suspicious {
+      transform: translateY(-7px) scale(1.04);
+    }
+
+    .bubble {
+      position: absolute;
+      left: 74px;
+      right: 74px;
+      top: 10px;
+      min-height: 54px;
+      border: 3px solid var(--line);
+      border-radius: 26px;
+      background: rgba(255, 255, 255, .95);
+      padding: 12px 14px;
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 800;
+      z-index: 5;
+    }
+
+    .bubble::after {
+      content: "";
+      position: absolute;
+      left: 22%;
+      bottom: -12px;
+      width: 20px;
+      height: 20px;
+      background: inherit;
+      border-right: 3px solid var(--line);
+      border-bottom: 3px solid var(--line);
+      transform: rotate(45deg);
+    }
+
+    .chatter {
+      position: absolute;
+      border: 2px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, .92);
+      padding: 8px 11px;
+      max-width: 144px;
+      min-height: 38px;
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 800;
+      z-index: 4;
+      transition: transform .18s ease, opacity .18s ease;
+      overflow-wrap: anywhere;
+    }
+
+    .chatter::after {
+      content: "";
+      position: absolute;
+      bottom: -10px;
+      width: 16px;
+      height: 16px;
+      background: inherit;
+      border-right: 2px solid var(--line);
+      border-bottom: 2px solid var(--line);
+      transform: rotate(45deg);
+    }
+
+    .chatter-a {
+      left: 30%;
+      top: 92px;
+    }
+
+    .chatter-a::after {
+      left: 44px;
+    }
+
+    .chatter-b {
+      right: 8px;
+      top: 150px;
+    }
+
+    .chatter-b::after {
+      right: 36px;
+    }
+
+    .chatter-c {
+      left: 38%;
+      top: 242px;
+    }
+
+    .chatter-c::after {
+      left: 42px;
+    }
+
+    .chatter.loud {
+      transform: translateY(-5px);
+      opacity: 1;
+    }
+
+    .float-score {
+      position: absolute;
+      left: 48%;
+      top: 47%;
+      padding: 8px 12px;
+      border: 3px solid var(--line);
+      background: #fff;
+      font-size: 32px;
+      font-weight: 900;
+      opacity: 0;
+      transform: translate(-50%, 8px) scale(.86);
+      pointer-events: none;
+      z-index: 7;
+    }
+
+    .float-score.show {
+      animation: pop .75s ease forwards;
+    }
+
+    .float-score.good {
+      color: var(--green);
+    }
+
+    .float-score.bad {
+      color: var(--red);
+    }
+
+    @keyframes pop {
+      0% { opacity: 0; transform: translate(-50%, 8px) scale(.86); }
+      22% { opacity: 1; transform: translate(-50%, -4px) scale(1.05); }
+      100% { opacity: 0; transform: translate(-50%, -34px) scale(1); }
+    }
+
+    .dialogue {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      align-items: stretch;
+      padding: 0;
+      background: transparent;
+      min-width: 0;
+    }
+
+    .linebox {
+      display: none;
+    }
+
+    .speaker {
+      font-weight: 900;
+      color: var(--blue);
+      font-size: 15px;
+    }
+
+    .current-line {
+      margin: 0;
+      font-size: clamp(17px, 2.2vw, 24px);
+      line-height: 1.35;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .controls {
+      width: 100%;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 88px 1fr 96px;
+      gap: 8px;
+    }
+
+    .player-card {
+      border: 2px solid var(--line);
+      background: #fff;
+      overflow: hidden;
+      min-height: 0;
+      border-radius: 8px;
+    }
+
+    .player-card img {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+      object-fit: cover;
+      object-position: 50% 23%;
+      display: block;
+    }
+
+    .yakiu {
+      border: 4px solid var(--line);
+      background: #ffe14f;
+      color: var(--ink);
+      font-size: clamp(27px, 4vw, 44px);
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 8px 0 var(--line);
+      transition: transform .08s ease, box-shadow .08s ease, filter .14s ease;
+      min-height: 96px;
+    }
+
+    .yakiu:active {
+      transform: translateY(7px);
+      box-shadow: 0 1px 0 var(--line);
+    }
+
+    .yakiu:disabled {
+      cursor: default;
+      filter: grayscale(.85) brightness(.9);
+      transform: translateY(7px);
+      box-shadow: 0 1px 0 var(--line);
+    }
+
+    .small-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .small-actions button,
+    .start button {
+      border: 2px solid var(--line);
+      background: #fff;
+      padding: 10px 8px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .start {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 250, 240, .7);
+      backdrop-filter: blur(3px);
+    }
+
+    .start-panel {
+      width: min(520px, calc(100% - 28px));
+      border: 3px solid var(--line);
+      background: #fff;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .start-panel h2 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 6vw, 52px);
+      letter-spacing: 0;
+    }
+
+    .start-panel p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.55;
+    }
+
+    .start-panel button {
+      width: min(260px, 100%);
+      background: var(--blue);
+      color: #fff;
+      font-size: 22px;
+      padding: 13px 10px;
+    }
+
+    .score-entry {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .score-entry input {
+      min-width: 0;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .score-entry button {
+      width: auto;
+      min-width: 76px;
+      font-size: 16px;
+      padding: 10px 12px;
+    }
+
+    .leaderboard {
+      margin-top: 12px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: #fff8e4;
+      padding: 10px;
+      text-align: left;
+    }
+
+    .leaderboard h3 {
+      margin: 0 0 7px;
+      font-size: 17px;
+      text-align: center;
+    }
+
+    .leaderboard ol {
+      margin: 0;
+      padding-left: 28px;
+      max-height: 132px;
+      overflow: auto;
+      font-weight: 800;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .leaderboard li {
+      padding-left: 3px;
+    }
+
+    .leaderboard .score-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .empty-ranking {
+      margin: 0;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-height: 700px) {
+      .game {
+        min-height: 560px;
+      }
+
+      .friend-c {
+        bottom: 126px;
+      }
+
+      .chatter-c {
+        top: 210px;
+      }
+
+      .controls {
+        grid-template-columns: 74px 1fr 86px;
+      }
+
+      .yakiu {
+        min-height: 82px;
+      }
+    }
+
+    /* Phone-first final layout */
+    body {
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 235, 170, .55), transparent 35%),
+        linear-gradient(180deg, #3b2728 0%, #52322d 48%, #2d2525 100%);
+    }
+
+    .game {
+      width: min(430px, 100vw);
+      height: min(100dvh, 760px);
+      min-height: 0;
+      padding: 8px;
+      grid-template-rows: auto minmax(0, 1fr) 106px;
+      gap: 8px;
+    }
+
+    .topbar {
+      border-width: 2px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, .2);
+      background: #fff8e4;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 7px;
+    }
+
+    h1 {
+      display: none;
+    }
+
+    .pill {
+      border-width: 3px;
+      padding: 8px 4px;
+      font-size: 16px;
+      line-height: 1.05;
+      box-shadow: 0 3px 0 var(--line);
+      white-space: nowrap;
+    }
+
+    .pill span {
+      display: block;
+      margin-top: 3px;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .pill .caught-value,
+    .pill .caught-value span {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .stage {
+      border-width: 2px;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(25, 18, 14, .08) 0%, rgba(25, 18, 14, .2) 62%, rgba(25, 18, 14, .44) 100%),
+        url("izakaya-background.png") center / cover no-repeat;
+    }
+
+    .stage::before {
+      display: none;
+    }
+
+    .stage::after {
+      display: none;
+    }
+
+    .stage .meters {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      z-index: 9;
+      pointer-events: none;
+    }
+
+    .stage .meters > div {
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 248, 228, .94);
+      padding: 5px;
+      box-shadow: 0 4px 0 rgba(47, 42, 39, .2);
+    }
+
+    .stage .meter-label {
+      font-size: 12px;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stage .track {
+      height: 12px;
+      border-width: 2px;
+      border-radius: 999px;
+    }
+
+    .poster,
+    .window {
+      display: none;
+    }
+
+    .bubble,
+    .chatter {
+      border-radius: 999px;
+      box-shadow: 0 5px 0 rgba(47, 42, 39, .22);
+    }
+
+    .bubble {
+      left: 18px;
+      right: 18px;
+      top: 96px;
+      bottom: auto;
+      min-height: 48px;
+      padding: 10px 16px;
+      font-size: 16px;
+      text-align: center;
+      z-index: 8;
+    }
+
+    .bubble::after,
+    .chatter::after {
+      border-radius: 4px;
+    }
+
+    .chatter {
+      max-width: 130px;
+      min-height: 35px;
+      font-size: 12px;
+      line-height: 1.2;
+      padding: 8px 11px;
+      z-index: 7;
+      text-align: center;
+    }
+
+    .chatter-a {
+      left: 116px;
+      top: 158px;
+      bottom: auto;
+    }
+
+    .chatter-b {
+      right: 10px;
+      top: 190px;
+      bottom: auto;
+    }
+
+    .chatter-c {
+      left: 142px;
+      top: 246px;
+      bottom: auto;
+    }
+
+    .character,
+    .friend-c {
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      border: 2px solid rgba(47, 42, 39, .65);
+      box-shadow: 0 10px 12px rgba(0,0,0,.22);
+    }
+
+    .character img,
+    .friend-c img {
+      width: 125%;
+      max-width: none;
+      margin-left: -12%;
+      margin-top: -8%;
+      border-radius: 0;
+      filter: none;
+    }
+
+    .character.meia {
+      left: 6%;
+      bottom: 8px;
+      width: 28%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      z-index: 5;
+    }
+
+    .character.listener-a {
+      left: 38%;
+      bottom: 8px;
+      width: 28%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      z-index: 4;
+    }
+
+    .character.listener-a img {
+      width: 128%;
+      margin-left: -14%;
+      margin-top: -9%;
+    }
+
+    .character.listener-b {
+      right: 5%;
+      bottom: 8px;
+      width: 28%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      z-index: 4;
+    }
+
+    .friend-c {
+      left: 38%;
+      bottom: 118px;
+      width: 24%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      z-index: 3;
+    }
+
+    .friend-c img {
+      width: 132%;
+      margin-left: -15%;
+      margin-top: -10%;
+    }
+
+    .yakiu-bubble {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translate(-50%, 28px) scale(.82);
+      min-width: 132px;
+      border: 4px solid var(--line);
+      border-radius: 999px;
+      background: #ffe14f;
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 32px;
+      font-weight: 950;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 12;
+      box-shadow: 0 7px 0 var(--line);
+    }
+
+    .yakiu-bubble::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -14px;
+      width: 22px;
+      height: 22px;
+      background: inherit;
+      border-right: 4px solid var(--line);
+      border-bottom: 4px solid var(--line);
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .yakiu-bubble.show {
+      animation: yakiuRise .82s ease forwards;
+    }
+
+    @keyframes yakiuRise {
+      0% { opacity: 0; transform: translate(-50%, 46px) scale(.82); }
+      20% { opacity: 1; transform: translate(-50%, -14px) scale(1.04); }
+      72% { opacity: 1; transform: translate(-50%, -28px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -58px) scale(.96); }
+    }
+
+    .dialogue {
+      min-height: 0;
+      align-self: end;
+    }
+
+    .controls {
+      grid-template-columns: 92px 1fr 82px;
+      align-items: stretch;
+      height: 106px;
+    }
+
+    .player-card {
+      border-width: 2px;
+      border-radius: 10px;
+    }
+
+    .player-card img {
+      object-position: 50% 18%;
+    }
+
+    .yakiu {
+      min-height: 96px;
+      border-radius: 12px;
+      font-size: 34px;
+    }
+
+    .small-actions button {
+      padding: 7px 4px;
+      font-size: 15px;
+      border-radius: 8px;
+    }
+
+    .start-panel {
+      width: calc(100% - 28px);
+      border-radius: 12px;
+    }
+
+    .start-logo {
+      width: min(330px, 100%);
+      height: 96px;
+      object-fit: contain;
+      display: block;
+      margin: -8px auto 8px;
+    }
+
+    @media (max-height: 720px) {
+      .game {
+        grid-template-rows: auto minmax(0, 1fr) 92px;
+      }
+
+      .pill {
+        font-size: 15px;
+        padding: 6px 3px;
+      }
+
+      .pill span {
+        font-size: 24px;
+      }
+
+      .bubble {
+        top: 88px;
+        font-size: 14px;
+        padding: 9px 13px;
+      }
+
+      .chatter-a {
+        top: 142px;
+      }
+
+      .chatter-b {
+        top: 172px;
+      }
+
+      .chatter-c {
+        top: 224px;
+      }
+
+      .character.meia {
+        bottom: 6px;
+      }
+
+      .character.listener-a {
+        bottom: 6px;
+      }
+
+      .character.listener-b {
+        bottom: 6px;
+      }
+
+      .friend-c {
+        bottom: 104px;
+      }
+
+      .controls {
+        grid-template-columns: 78px 1fr 76px;
+        height: 92px;
+      }
+
+      .yakiu {
+        min-height: 82px;
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" aria-label="やきうさしこみ">
+    <header class="topbar">
+      <h1>やきうさしこみ</h1>
+      <div class="pill">得点 <span id="score">0</span></div>
+      <div class="pill">バレ <span class="caught-value"><span id="caughtCount">0</span>/3</span></div>
+      <div class="pill">残り時間 <span id="time">1:00</span></div>
+    </header>
+
+    <aside class="side">
+      <div class="portrait" aria-hidden="true">
+        <img src="meia-generated.png" alt="">
+      </div>
+
+      <section id="log" class="log" aria-live="polite"></section>
+    </aside>
+
+    <section class="stage" aria-label="会話の場面">
+      <section class="meters" aria-label="状態">
+        <div>
+          <div class="meter-label"><span>視線</span><span id="attentionText">ふつう</span></div>
+          <div class="track"><div id="attentionFill" class="fill"></div></div>
+        </div>
+        <div>
+          <div class="meter-label"><span>危険</span><span id="suspicionText">0%</span></div>
+          <div class="track"><div id="suspicionFill" class="fill"></div></div>
+        </div>
+      </section>
+      <div class="poster" aria-hidden="true">や?</div>
+      <div class="window" aria-hidden="true"></div>
+      <div id="bubble" class="bubble">メイアたちが同時に話している。今なら紛れ込ませられるかも。</div>
+      <div id="chatterA" class="chatter chatter-a">昨日のあれ、結局どうなったの？</div>
+      <div id="chatterB" class="chatter chatter-b">待って、その話先に聞きたい。</div>
+      <div id="chatterC" class="chatter chatter-c">飲み物もう一つ頼む？</div>
+      <div id="floatScore" class="float-score">+1</div>
+      <div id="yakiuBubble" class="yakiu-bubble">やきう</div>
+
+      <div id="meia" class="character meia" aria-label="メイア">
+        <img src="meia-generated.png" alt="銀髪ショートカットで青白い顔のメイア">
+      </div>
+
+      <div id="listenerA" class="character listener-a" aria-label="友人A">
+        <img src="friend-rose-generated.png" alt="ローズカラーのセミロングで真ん中分けの友人">
+      </div>
+
+      <div id="listenerB" class="character listener-b" aria-label="友人B">
+        <img src="friend-gyaru-generated.png" alt="金髪盛り髪のギャルの友人">
+      </div>
+
+      <div id="friendC" class="friend-c" aria-label="友人C">
+        <img src="friend-elf-generated.png" alt="小柄なエルフの友人">
+      </div>
+
+      <div id="start" class="start">
+        <div class="start-panel">
+          <h2><img class="start-logo" src="yakiu-logo.png" alt="やきうさしこみ"></h2>
+          <p>プレイヤーが会話に「やきう」を差し込む。気づかれなければ+1、気づかれたら-1。</p>
+          <div id="scoreEntry" class="score-entry hidden">
+            <input id="playerName" type="text" maxlength="12" autocomplete="nickname" placeholder="名前">
+            <button id="saveScoreButton" type="button">保存</button>
+          </div>
+          <section class="leaderboard" aria-label="ランキング">
+            <h3>ランキング</h3>
+            <ol id="leaderboardList"></ol>
+          </section>
+          <button id="startButton" type="button">開始</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="dialogue">
+      <div class="linebox">
+        <div class="speaker">会話</div>
+        <p id="line" class="current-line">開始を押すと、メイアと友人たちの雑談が始まります。</p>
+      </div>
+      <div class="controls">
+        <div class="player-card" aria-label="プレイヤー">
+          <img src="player-avatar.png" alt="やきうを差し込むプレイヤー">
+        </div>
+        <button id="yakiuButton" class="yakiu" type="button" disabled>やきう</button>
+        <div class="small-actions">
+          <button id="pauseButton" type="button">停止</button>
+          <button id="resetButton" type="button">再戦</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const conversationStarts = [
+      "それでさ、昨日の帰りに駅前でばったり会って",
+      "さっき隣の席の人が頼んでた串盛りがすごくて",
+      "今日みたいに全員そろうの久しぶりだから",
+      "あの店の新メニュー、写真だけ見たんだけど",
+      "待って、その話の前に一個だけ確認したいんだけど",
+      "この前送ってくれた動画、音だけ妙に大きくて",
+      "駅前の看板、いつの間にか変わってたよね",
+      "メイアが言ってた予定表、たぶん一日ずれてて",
+      "さっきから同じ曲が流れてる気がするんだけど",
+      "このお通し、見た目よりずっと味が濃くて",
+      "次に集まるなら、もう少し早い時間にして",
+      "あの角の席、妙に落ち着くと思わない？",
+      "注文するタイミングを完全に見失って",
+      "写真を撮ろうとした瞬間だけ湯気が消えて",
+      "メニューの端に書いてある小さい文字が気になって",
+      "さっきの乾杯、誰もタイミング合ってなくて",
+      "この話、途中から三つくらいに分岐してて",
+      "隣のテーブルの笑い声につられて",
+      "帰り道のルート、たぶん全員違うこと考えてて",
+      "このあと甘いものを食べるかどうかで"
+    ];
+
+    const conversationEnds = [
+      "ほんとにびっくりしたんだよね。",
+      "もう一回ちゃんと聞きたい。",
+      "なんかずっと喋ってられるね。",
+      "感想だけ先に聞かせて。",
+      "今のうちに決めちゃおう。",
+      "全員ちょっとずつ違う理解をしてる。",
+      "それはさすがに笑った。",
+      "メイアだけ妙に冷静だった。",
+      "一瞬だけ全員黙ったよね。",
+      "もう注文していいと思う。",
+      "あとで写真送ってほしい。",
+      "たぶん誰も覚えてない。",
+      "その言い方だと別の話に聞こえる。",
+      "今言うと絶対ややこしくなる。",
+      "結論だけ先に知りたい。",
+      "それを言うなら私もある。",
+      "声が重なりすぎて分からない。",
+      "今の間、ちょっと良かった。",
+      "次の飲み物来てから話そう。",
+      "話題が迷子になってる。"
+    ];
+
+    const lines = Array.from({ length: 100 }, (_, index) => {
+      const start = conversationStarts[index % conversationStarts.length];
+      const end = conversationEnds[Math.floor(index / conversationStarts.length) * 4 + index % 4];
+      return `${start}、${end}`;
+    });
+
+    const friendStarts = [
+      "それ本当に？", "写真ある？", "私は駅前派。", "ちょっと待って。", "その話好き。",
+      "飲み物来たよ。", "あとで送って。", "お腹すいた。", "今なんて？", "分かるかも。",
+      "声重なってる。", "順番に話して。", "それは強い。", "メイア見て。", "一回止まろう。",
+      "注文する？", "それ誰の話？", "あ、聞いてた。", "今の好き。", "もう一皿いく？"
+    ];
+
+    const friendEnds = [
+      "でも続けて。", "あとで詳しく。", "先に乾杯。", "笑いすぎた。", "それは違うかも。",
+      "私は賛成。", "今の聞こえた。", "ちょっと怪しい。", "声小さくない？", "それ何の話？",
+      "メニュー見せて。", "同時に言わないで。", "そこ大事。", "急に来たね。", "なるほどね。",
+      "もう一回。", "誰か拾って。", "分かる分かる。", "それで？", "次どうする？"
+    ];
+
+    const friendLines = Array.from({ length: 100 }, (_, index) => {
+      const start = friendStarts[index % friendStarts.length];
+      const end = friendEnds[Math.floor(index / friendStarts.length) * 4 + index % 4];
+      return `${start} ${end}`;
+    });
+
+    const reactions = {
+      safe: [
+        "友人たちの声にまぎれた。",
+        "全員が別の話をしていて差し込み成功。",
+        "ちょうど笑い声が重なってバレなかった。",
+        "メイアたちは気づかず会話を続けた。"
+      ],
+      caught: [
+        "メイア: 滅ぼす。",
+        "今、誰かやきうって言った？",
+        "急に何の話？",
+        "一人だけ完全に差し込みを拾っていた。",
+        "友人の眉が上がった。"
+      ]
+    };
+
+    const state = {
+      score: 0,
+      caughtCount: 0,
+      time: 60,
+      suspicion: 0,
+      attention: 45,
+      lineIndex: 0,
+      running: false,
+      paused: false,
+      lineTimer: 0,
+      tickTimer: 0
+    };
+
+    const els = {
+      score: document.querySelector("#score"),
+      caughtCount: document.querySelector("#caughtCount"),
+      time: document.querySelector("#time"),
+      line: document.querySelector("#line"),
+      bubble: document.querySelector("#bubble"),
+      yakiu: document.querySelector("#yakiuButton"),
+      pause: document.querySelector("#pauseButton"),
+      reset: document.querySelector("#resetButton"),
+      chatterA: document.querySelector("#chatterA"),
+      chatterB: document.querySelector("#chatterB"),
+      chatterC: document.querySelector("#chatterC"),
+      start: document.querySelector("#start"),
+      startButton: document.querySelector("#startButton"),
+      scoreEntry: document.querySelector("#scoreEntry"),
+      playerName: document.querySelector("#playerName"),
+      saveScoreButton: document.querySelector("#saveScoreButton"),
+      leaderboardList: document.querySelector("#leaderboardList"),
+      attentionFill: document.querySelector("#attentionFill"),
+      attentionText: document.querySelector("#attentionText"),
+      suspicionFill: document.querySelector("#suspicionFill"),
+      suspicionText: document.querySelector("#suspicionText"),
+      log: document.querySelector("#log"),
+      floatScore: document.querySelector("#floatScore"),
+      yakiuBubble: document.querySelector("#yakiuBubble"),
+      listenerA: document.querySelector("#listenerA"),
+      listenerB: document.querySelector("#listenerB"),
+      friendC: document.querySelector("#friendC"),
+      meia: document.querySelector("#meia")
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function sample(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function formatTime(seconds) {
+      const safeSeconds = Math.max(0, seconds);
+      const minutes = Math.floor(safeSeconds / 60);
+      const rest = String(safeSeconds % 60).padStart(2, "0");
+      return `${minutes}:${rest}`;
+    }
+
+    function setLog(text, good) {
+      const p = document.createElement("p");
+      p.textContent = text;
+      p.style.color = good ? "var(--green)" : "var(--red)";
+      p.style.fontWeight = "800";
+      els.log.prepend(p);
+      while (els.log.children.length > 8) {
+        els.log.lastElementChild.remove();
+      }
+    }
+
+    function setBubble(text) {
+      els.bubble.textContent = text;
+    }
+
+    function getLeaderboard() {
+      try {
+        return JSON.parse(localStorage.getItem("yakiuSashikomiScores") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function setLeaderboard(scores) {
+      localStorage.setItem("yakiuSashikomiScores", JSON.stringify(scores.slice(0, 10)));
+    }
+
+    function renderLeaderboard() {
+      const scores = getLeaderboard();
+      els.leaderboardList.innerHTML = "";
+      if (scores.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "empty-ranking";
+        empty.textContent = "まだ記録なし";
+        els.leaderboardList.append(empty);
+        return;
+      }
+
+      for (const item of scores) {
+        const li = document.createElement("li");
+        const row = document.createElement("span");
+        const name = document.createElement("span");
+        const score = document.createElement("span");
+        row.className = "score-row";
+        name.textContent = item.name;
+        score.textContent = `${item.score}点`;
+        row.append(name, score);
+        li.append(row);
+        els.leaderboardList.append(li);
+      }
+    }
+
+    function saveCurrentScore() {
+      const name = els.playerName.value.trim().slice(0, 12) || "名無し";
+      const scores = getLeaderboard();
+      scores.push({
+        name,
+        score: state.score,
+        caught: state.caughtCount,
+        date: new Date().toISOString()
+      });
+      scores.sort((a, b) => b.score - a.score || a.caught - b.caught);
+      setLeaderboard(scores);
+      els.scoreEntry.classList.add("hidden");
+      renderLeaderboard();
+    }
+
+    function updateView() {
+      els.score.textContent = state.score;
+      els.caughtCount.textContent = state.caughtCount;
+      els.time.textContent = formatTime(state.time);
+      els.suspicionText.textContent = `${Math.round(state.suspicion)}%`;
+      els.suspicionFill.style.width = `${state.suspicion}%`;
+      els.suspicionFill.style.background = state.suspicion > 66 ? "var(--red)" : state.suspicion > 34 ? "var(--gold)" : "var(--green)";
+
+      const attentionLabel = state.attention < 35 ? "よそ見" : state.attention > 70 ? "凝視" : "ふつう";
+      els.attentionText.textContent = attentionLabel;
+      els.attentionFill.style.width = `${state.attention}%`;
+      els.attentionFill.style.background = state.attention < 35 ? "var(--green)" : state.attention > 70 ? "var(--red)" : "var(--gold)";
+
+      els.listenerA.classList.toggle("distracted", state.attention < 35);
+      els.listenerB.classList.toggle("distracted", state.attention < 42);
+      els.friendC.classList.toggle("distracted", state.attention < 48);
+      els.listenerA.classList.toggle("suspicious", state.attention > 76);
+      els.listenerB.classList.toggle("suspicious", state.attention > 70);
+      els.friendC.classList.toggle("suspicious", state.attention > 82);
+      els.chatterA.classList.toggle("loud", state.attention < 52);
+      els.chatterB.classList.toggle("loud", state.attention < 42);
+      els.chatterC.classList.toggle("loud", state.attention < 62);
+      els.yakiu.disabled = !state.running || state.paused || state.time <= 0;
+    }
+
+    function refreshFriendChatter() {
+      const picks = [];
+      while (picks.length < 3) {
+        const text = sample(friendLines);
+        if (!picks.includes(text)) picks.push(text);
+      }
+      els.chatterA.textContent = picks[0];
+      els.chatterB.textContent = picks[1];
+      els.chatterC.textContent = picks[2];
+    }
+
+    function nextLine() {
+      if (!state.running || state.paused) return;
+      const base = lines[state.lineIndex % lines.length];
+      state.lineIndex += 1;
+      els.line.textContent = base;
+      setBubble(base);
+      refreshFriendChatter();
+      els.meia.style.transform = "translateY(-4px)";
+      window.setTimeout(() => {
+        els.meia.style.transform = "";
+      }, 180);
+    }
+
+    function tick() {
+      if (!state.running || state.paused) return;
+      state.time -= 1;
+      state.attention = clamp(state.attention + (Math.random() * 42 - 21), 8, 94);
+      state.suspicion = clamp(state.suspicion - 2.5 + Math.random() * 2, 0, 100);
+
+      if (state.time <= 0) {
+        finish();
+      }
+      updateView();
+    }
+
+    function flashScore(delta) {
+      els.floatScore.textContent = delta > 0 ? "+1" : "-1";
+      els.floatScore.className = `float-score ${delta > 0 ? "good" : "bad"} show`;
+      window.setTimeout(() => {
+        els.floatScore.className = "float-score";
+      }, 760);
+    }
+
+    function showYakiuBubble() {
+      els.yakiuBubble.classList.remove("show");
+      void els.yakiuBubble.offsetWidth;
+      els.yakiuBubble.classList.add("show");
+    }
+
+    function insertYakiu() {
+      if (!state.running || state.paused || state.time <= 0) return;
+      showYakiuBubble();
+
+      const chatterCover = state.attention < 35 ? 28 : state.attention < 55 ? 14 : 0;
+      const caughtChance = clamp((state.attention * 0.7 + state.suspicion * 0.5 - 18 - chatterCover) / 100, .05, .9);
+      const caught = Math.random() < caughtChance;
+      const delta = caught ? -1 : 1;
+      state.score += delta;
+
+      if (caught) {
+        state.caughtCount += 1;
+        state.suspicion = clamp(state.suspicion + 25, 0, 100);
+        state.attention = clamp(state.attention + 18, 0, 100);
+        const text = state.caughtCount === 1 ? "メイア: 滅ぼす。" : sample(reactions.caught);
+        setBubble(text);
+        els.chatterA.textContent = "え？";
+        els.chatterB.textContent = "今の何？";
+        els.chatterC.textContent = "聞こえた。";
+        setLog(`-1 ${text}`, false);
+        if (state.caughtCount >= 3) {
+          flashScore(delta);
+          updateView();
+          finish("caught");
+          return;
+        }
+      } else {
+        state.suspicion = clamp(state.suspicion + 7, 0, 100);
+        state.attention = clamp(state.attention + 4, 0, 100);
+        const text = sample(reactions.safe);
+        setBubble("プレイヤー: ……やきう。");
+        refreshFriendChatter();
+        setLog(`+1 ${text}`, true);
+        window.setTimeout(() => {
+          if (state.running && !state.paused) setBubble(els.line.textContent);
+        }, 820);
+      }
+
+      flashScore(delta);
+      updateView();
+    }
+
+    function startGame() {
+      state.score = 0;
+      state.caughtCount = 0;
+      state.time = 60;
+      state.suspicion = 0;
+      state.attention = 45;
+      state.lineIndex = 0;
+      state.running = true;
+      state.paused = false;
+      els.log.innerHTML = "";
+      els.start.classList.add("hidden");
+      els.scoreEntry.classList.add("hidden");
+      els.pause.textContent = "停止";
+      refreshFriendChatter();
+      nextLine();
+      window.clearInterval(state.lineTimer);
+      window.clearInterval(state.tickTimer);
+      state.lineTimer = window.setInterval(nextLine, 3600);
+      state.tickTimer = window.setInterval(tick, 1000);
+      updateView();
+    }
+
+    function finish(reason = "time") {
+      state.running = false;
+      window.clearInterval(state.lineTimer);
+      window.clearInterval(state.tickTimer);
+      els.time.textContent = "0:00";
+      if (reason === "caught") {
+        setBubble("メイア: 滅ぼす。");
+        els.line.textContent = "3回バレて、メイアの「滅ぼす」が確定した。";
+      } else {
+        setBubble(`終了。得点は ${state.score} 点。`);
+        els.line.textContent = state.score >= 10
+          ? "プレイヤーは伝説の自然なやきう差し込み師になった。"
+          : state.score >= 4
+            ? "プレイヤーのやきうは、メイアたちの雑談にほどよく紛れ込めた。"
+            : "プレイヤーは次の雑談で再挑戦することにした。";
+      }
+      els.start.classList.remove("hidden");
+      els.start.querySelector("h2").textContent = reason === "caught" ? "ゲームオーバー" : "結果発表";
+      els.start.querySelector("p").textContent = `最終得点 ${state.score} 点 / バレ ${state.caughtCount} 回`;
+      els.scoreEntry.classList.remove("hidden");
+      els.playerName.value = localStorage.getItem("yakiuSashikomiLastName") || "";
+      els.playerName.focus();
+      els.startButton.textContent = "もう一度";
+      renderLeaderboard();
+      updateView();
+    }
+
+    function togglePause() {
+      if (!state.running) return;
+      state.paused = !state.paused;
+      els.pause.textContent = state.paused ? "再開" : "停止";
+      setBubble(state.paused ? "会話が一時停止している。" : els.line.textContent);
+      updateView();
+    }
+
+    els.startButton.addEventListener("click", startGame);
+    els.saveScoreButton.addEventListener("click", () => {
+      localStorage.setItem("yakiuSashikomiLastName", els.playerName.value.trim().slice(0, 12));
+      saveCurrentScore();
+    });
+    els.playerName.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !els.scoreEntry.classList.contains("hidden")) {
+        localStorage.setItem("yakiuSashikomiLastName", els.playerName.value.trim().slice(0, 12));
+        saveCurrentScore();
+      }
+    });
+    els.yakiu.addEventListener("click", insertYakiu);
+    els.pause.addEventListener("click", togglePause);
+    els.reset.addEventListener("click", startGame);
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "Space" || event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        insertYakiu();
+      }
+    });
+
+    updateView();
+    renderLeaderboard();
+  </script>
+</body>
+</html>
